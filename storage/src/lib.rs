@@ -32,5 +32,5 @@ mod rocks;
 #[cfg(feature = "rocksdb_storage")]
 pub use rocks::RocksDb as LedgerStorage;
 
-pub mod validator;
-pub use validator::*;
+// pub mod validator;
+// pub use validator::*;

@@ -68,6 +68,9 @@ features = [ "derive" ]
 [dependencies.thiserror]
 version = "1.0"
 
+[dependencies.async-trait]
+version = "0.1"
+
 [dependencies.tracing]
 default-features = false
 features = [ "log" ]

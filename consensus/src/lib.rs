@@ -41,6 +41,8 @@ extern crate thiserror;
 extern crate tracing;
 
 pub mod consensus;
+use std::sync::Arc;
+
 pub use consensus::*;
 
 pub mod difficulty;
@@ -60,14 +62,14 @@ pub use parameters::*;
 use snarkos_storage::Ledger;
 use snarkvm_dpc::{
     testnet1::{
-        instantiated::{CommitmentMerkleParameters, Tx},
+        instantiated::Tx,
         transaction::amount::AleoAmount,
     },
     BlockHeader,
     BlockHeaderHash,
 };
 
-pub type MerkleTreeLedger<S> = Ledger<Tx, CommitmentMerkleParameters, S>;
+pub type MerkleTreeLedger = Arc<dyn Ledger>;
 
 /// Calculate a block reward that halves every 4 years * 365 days * 24 hours * 100 blocks/hr = 3,504,000 blocks.
 pub fn get_block_reward(block_num: u32) -> AleoAmount {

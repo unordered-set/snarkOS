@@ -20,28 +20,6 @@ use snarkvm_dpc::{errors::StorageError, Block, BlockHeader, BlockHeaderHash, Sto
 use snarkvm_utilities::FromBytes;
 
 impl<T: TransactionScheme, P: LoadableMerkleParameters, S: Storage> Ledger<T, P, S> {
-    /// Returns true if the block for the given block header hash exists.
-    pub fn block_hash_exists(&self, block_hash: &BlockHeaderHash) -> bool {
-        if self.is_empty() {
-            return false;
-        }
-
-        self.get_block_header(block_hash).is_ok()
-    }
-
-    /// Get a block header given the block hash.
-    pub fn get_block_header(&self, block_hash: &BlockHeaderHash) -> Result<BlockHeader, StorageError> {
-        match self.storage.get(COL_BLOCK_HEADER, &block_hash.0)? {
-            Some(block_header_bytes) => Ok(BlockHeader::read(&block_header_bytes[..])?),
-            None => Err(StorageError::MissingBlockHeader(block_hash.to_string())),
-        }
-    }
-
-    /// Returns true if the block corresponding to this block's previous_block_hash exists.
-    pub fn previous_block_hash_exists(&self, block: &Block<T>) -> bool {
-        self.block_hash_exists(&block.header.previous_block_hash)
-    }
-
     /// Returns the latest shared block header hash.
     /// If the block locator hashes are for a side chain, returns the common point of fork.
     /// If the block locator hashes are for the canon chain, returns the latest block header hash.

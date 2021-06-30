@@ -16,7 +16,6 @@
 
 use crate::{Node, State};
 use snarkos_consensus::{ConsensusParameters, MemoryPool, MerkleTreeLedger};
-use snarkos_storage::BlockHeight;
 use snarkvm_dpc::{
     testnet1::{
         instantiated::{Components, Tx},
@@ -91,7 +90,7 @@ impl<S: Storage + core::marker::Sync + Send + 'static> Sync<S> {
 
     /// Returns the current block height of the ledger from storage.
     #[inline]
-    pub fn current_block_height(&self) -> BlockHeight {
+    pub fn current_block_height(&self) -> u32 {
         self.consensus.ledger.get_current_block_height()
     }
 

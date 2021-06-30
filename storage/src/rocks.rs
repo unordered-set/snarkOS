@@ -32,15 +32,11 @@ pub struct RocksDb {
 impl Storage for RocksDb {
     const IN_MEMORY: bool = false;
 
-    fn open(path: Option<&Path>, secondary_path: Option<&Path>) -> Result<Self, StorageError> {
+    fn open(path: Option<&Path>, _secondary_path: Option<&Path>) -> Result<Self, StorageError> {
         assert!(path.is_some(), "RocksDB must have an associated filesystem path!");
         let primary_path = path.unwrap();
 
-        if let Some(secondary_path) = secondary_path {
-            RocksDb::open_secondary_cf(primary_path, secondary_path, NUM_COLS)
-        } else {
-            RocksDb::open_cf(primary_path, NUM_COLS)
-        }
+        RocksDb::open_cf(primary_path, NUM_COLS)
     }
 
     fn get(&self, col: u32, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
@@ -96,9 +92,7 @@ impl Storage for RocksDb {
     }
 
     fn try_catch_up_with_primary(&self) -> Result<(), StorageError> {
-        self.db()
-            .try_catch_up_with_primary()
-            .map_err(|e| StorageError::Message(format!("Can't catch up with primary storage: {}", e)))
+        Err(StorageError::Message("RocksDB has no secondary instance".into()))
     }
 }
 
@@ -146,32 +140,6 @@ impl RocksDb {
         storage_opts.create_if_missing(true);
 
         let storage = DB::open_cf_descriptors(&storage_opts, path, cfs).map_err(convert_err)?;
-
-        Ok(Self {
-            db: Some(storage),
-            cf_names,
-        })
-    }
-
-    /// Opens a secondary storage instance from the given path with its given names.
-    /// If RocksDB fails to open, returns [StorageError](snarkvm_errors::storage::StorageError).
-    pub fn open_secondary_cf<P: AsRef<Path> + Clone>(
-        primary_path: P,
-        secondary_path: P,
-        num_cfs: u32,
-    ) -> Result<Self, StorageError> {
-        let mut cf_names: Vec<String> = Vec::with_capacity(num_cfs as usize);
-        for column in 0..num_cfs {
-            let column_name = format!("col{}", column.to_string());
-            cf_names.push(column_name);
-        }
-        let mut storage_opts = Options::default();
-        storage_opts.increase_parallelism(2);
-
-        let storage = DB::open_cf_as_secondary(&storage_opts, primary_path, secondary_path, cf_names.clone())
-            .map_err(convert_err)?;
-
-        storage.try_catch_up_with_primary().map_err(convert_err)?;
 
         Ok(Self {
             db: Some(storage),

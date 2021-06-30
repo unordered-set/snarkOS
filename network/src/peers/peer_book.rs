@@ -29,7 +29,6 @@ use snarkvm_dpc::Storage;
 use tokio::{net::TcpStream, sync::mpsc};
 
 use snarkos_metrics::{self as metrics, connections::*};
-use snarkos_storage::BlockHeight;
 
 use crate::{NetworkError, Node, Payload, Peer, PeerEvent, PeerEventData, PeerHandle, PeerStatus};
 
@@ -259,7 +258,7 @@ impl PeerBook {
     }
 
     /// returns (peer, count_total_higher)
-    pub async fn random_higher_peer(&self, block_height: BlockHeight) -> Option<(Peer, usize)> {
+    pub async fn random_higher_peer(&self, block_height: u32) -> Option<(Peer, usize)> {
         let peers = self
             .connected_peers_snapshot()
             .await

@@ -39,75 +39,75 @@ pub struct SideChainPath {
     pub path: Vec<BlockHeaderHash>,
 }
 
-impl<T: TransactionScheme, P: LoadableMerkleParameters, S: Storage> Ledger<T, P, S> {
-    /// Get the block's path/origin.
-    pub fn get_block_path(&self, block_header: &BlockHeader) -> Result<BlockPath, StorageError> {
-        let block_hash = block_header.get_hash();
+// impl<T: TransactionScheme, P: LoadableMerkleParameters, S: Storage> Ledger<T, P, S> {
+//     /// Get the block's path/origin.
+//     pub fn get_block_path(&self, block_header: &BlockHeader) -> Result<BlockPath, StorageError> {
+//         let block_hash = block_header.get_hash();
 
-        // The given block header already exists
-        if self.is_canon(&block_hash) {
-            return Ok(BlockPath::ExistingBlock);
-        }
+//         // The given block header already exists
+//         if self.is_canon(&block_hash) {
+//             return Ok(BlockPath::ExistingBlock);
+//         }
 
-        // The given block header is valid on the canon chain
-        if self.get_latest_block()?.header.get_hash() == block_header.previous_block_hash {
-            return Ok(BlockPath::CanonChain(self.get_current_block_height() + 1));
-        }
+//         // The given block header is valid on the canon chain
+//         if self.get_latest_block()?.header.get_hash() == block_header.previous_block_hash {
+//             return Ok(BlockPath::CanonChain(self.get_current_block_height() + 1));
+//         }
 
-        let mut side_chain_path = vec![];
-        let mut parent_hash = block_header.previous_block_hash.clone();
+//         let mut side_chain_path = vec![];
+//         let mut parent_hash = block_header.previous_block_hash.clone();
 
-        // Find the sidechain path (with a maximum size of OLDEST_FORK_THRESHOLD)
-        for _ in 0..=OLDEST_FORK_THRESHOLD {
-            // check if the part is part of the canon chain
-            match &self.get_block_number(&parent_hash) {
-                // This is a canon parent
-                Ok(block_num) => {
-                    // Add the children from the latest block
+//         // Find the sidechain path (with a maximum size of OLDEST_FORK_THRESHOLD)
+//         for _ in 0..=OLDEST_FORK_THRESHOLD {
+//             // check if the part is part of the canon chain
+//             match &self.get_block_number(&parent_hash) {
+//                 // This is a canon parent
+//                 Ok(block_num) => {
+//                     // Add the children from the latest block
 
-                    let longest_path = self.longest_child_path(block_hash)?;
+//                     let longest_path = self.longest_child_path(block_hash)?;
 
-                    side_chain_path.extend(longest_path);
+//                     side_chain_path.extend(longest_path);
 
-                    return Ok(BlockPath::SideChain(SideChainPath {
-                        shared_block_number: *block_num,
-                        new_block_number: block_num + side_chain_path.len() as u32,
-                        path: side_chain_path,
-                    }));
-                }
-                // Add to the side_chain_path
-                Err(_) => {
-                    side_chain_path.insert(0, parent_hash.clone());
-                    parent_hash = self.get_block_header(&parent_hash)?.previous_block_hash;
-                }
-            }
-        }
+//                     return Ok(BlockPath::SideChain(SideChainPath {
+//                         shared_block_number: *block_num,
+//                         new_block_number: block_num + side_chain_path.len() as u32,
+//                         path: side_chain_path,
+//                     }));
+//                 }
+//                 // Add to the side_chain_path
+//                 Err(_) => {
+//                     side_chain_path.insert(0, parent_hash.clone());
+//                     parent_hash = self.get_block_header(&parent_hash)?.previous_block_hash;
+//                 }
+//             }
+//         }
 
-        Err(StorageError::BlockError(BlockError::IrrelevantBlock(
-            block_hash.to_string(),
-        )))
-    }
+//         Err(StorageError::BlockError(BlockError::IrrelevantBlock(
+//             block_hash.to_string(),
+//         )))
+//     }
 
-    /// Returns the path length and the longest path of children from the given block header
-    pub fn longest_child_path(&self, block_hash: BlockHeaderHash) -> Result<Vec<BlockHeaderHash>, StorageError> {
-        let mut round = vec![vec![block_hash]];
-        let mut next_round = vec![];
-        loop {
-            for path in &round {
-                let children = self.get_child_block_hashes(path.last().unwrap())?;
-                next_round.extend(children.into_iter().map(|x| {
-                    let mut path = path.clone();
-                    path.push(x);
-                    path
-                }));
-            }
-            if next_round.is_empty() {
-                break;
-            }
-            round = next_round;
-            next_round = vec![];
-        }
+//     /// Returns the path length and the longest path of children from the given block header
+//     pub fn longest_child_path(&self, block_hash: BlockHeaderHash) -> Result<Vec<BlockHeaderHash>, StorageError> {
+//         let mut round = vec![vec![block_hash]];
+//         let mut next_round = vec![];
+//         loop {
+//             for path in &round {
+//                 let children = self.get_child_block_hashes(path.last().unwrap())?;
+//                 next_round.extend(children.into_iter().map(|x| {
+//                     let mut path = path.clone();
+//                     path.push(x);
+//                     path
+//                 }));
+//             }
+//             if next_round.is_empty() {
+//                 break;
+//             }
+//             round = next_round;
+//             next_round = vec![];
+//         }
 
-        Ok(round.into_iter().max_by_key(|x| x.len()).unwrap())
-    }
-}
+//         Ok(round.into_iter().max_by_key(|x| x.len()).unwrap())
+//     }
+// }

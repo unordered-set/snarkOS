@@ -25,82 +25,11 @@ use snarkvm_utilities::{
 use std::{collections::HashSet, sync::Arc};
 
 impl<T: TransactionScheme, P: LoadableMerkleParameters, S: Storage> Ledger<T, P, S> {
-    /// Get the current commitment index
-    pub fn current_cm_index(&self) -> Result<usize, StorageError> {
-        match self.storage.get(COL_META, KEY_CURR_CM_INDEX.as_bytes())? {
-            Some(cm_index_bytes) => Ok(bytes_to_u32(&cm_index_bytes) as usize),
-            None => Ok(0),
-        }
-    }
-
-    /// Get the current serial number index
-    pub fn current_sn_index(&self) -> Result<usize, StorageError> {
-        match self.storage.get(COL_META, KEY_CURR_SN_INDEX.as_bytes())? {
-            Some(sn_index_bytes) => Ok(bytes_to_u32(&sn_index_bytes) as usize),
-            None => Ok(0),
-        }
-    }
-
-    /// Get the current memo index
-    pub fn current_memo_index(&self) -> Result<usize, StorageError> {
-        match self.storage.get(COL_META, KEY_CURR_MEMO_INDEX.as_bytes())? {
-            Some(memo_index_bytes) => Ok(bytes_to_u32(&memo_index_bytes) as usize),
-            None => Ok(0),
-        }
-    }
-
     /// Get the current ledger digest
     pub fn current_digest(&self) -> Result<Vec<u8>, StorageError> {
         match self.storage.get(COL_META, KEY_CURR_DIGEST.as_bytes())? {
             Some(current_digest) => Ok(current_digest),
             None => Ok(to_bytes![self.cm_merkle_tree.load().root()].unwrap()),
-        }
-    }
-
-    /// Get the set of past ledger digests
-    pub fn past_digests(&self) -> Result<HashSet<Box<[u8]>>, StorageError> {
-        let keys = self.storage.get_keys(COL_DIGEST)?;
-        let digests = keys.into_iter().collect();
-
-        Ok(digests)
-    }
-
-    /// Get serial number index.
-    pub fn get_sn_index(&self, sn_bytes: &[u8]) -> Result<Option<usize>, StorageError> {
-        match self.storage.get(COL_SERIAL_NUMBER, sn_bytes)? {
-            Some(sn_index_bytes) => {
-                let mut sn_index = [0u8; 4];
-                sn_index.copy_from_slice(&sn_index_bytes[0..4]);
-
-                Ok(Some(u32::from_le_bytes(sn_index) as usize))
-            }
-            None => Ok(None),
-        }
-    }
-
-    /// Get commitment index
-    pub fn get_cm_index(&self, cm_bytes: &[u8]) -> Result<Option<usize>, StorageError> {
-        match self.storage.get(COL_COMMITMENT, cm_bytes)? {
-            Some(cm_index_bytes) => {
-                let mut cm_index = [0u8; 4];
-                cm_index.copy_from_slice(&cm_index_bytes[0..4]);
-
-                Ok(Some(u32::from_le_bytes(cm_index) as usize))
-            }
-            None => Ok(None),
-        }
-    }
-
-    /// Get memo index
-    pub fn get_memo_index(&self, memo_bytes: &[u8]) -> Result<Option<usize>, StorageError> {
-        match self.storage.get(COL_MEMO, memo_bytes)? {
-            Some(memo_index_bytes) => {
-                let mut memo_index = [0u8; 4];
-                memo_index.copy_from_slice(&memo_index_bytes[0..4]);
-
-                Ok(Some(u32::from_le_bytes(memo_index) as usize))
-            }
-            None => Ok(None),
         }
     }
 

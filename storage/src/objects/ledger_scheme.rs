@@ -25,7 +25,7 @@ use snarkvm_utilities::{
 
 use std::{fs, marker::PhantomData, path::Path, sync::Arc};
 
-impl<T: TransactionScheme, P: LoadableMerkleParameters, S: Storage> LedgerScheme for Ledger<T, P, S> {
+impl<'a> LedgerScheme for &'a dyn Ledger {
     type Block = Block<Self::Transaction>;
     type Commitment = T::Commitment;
     type MerkleParameters = P;

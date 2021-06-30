@@ -43,14 +43,14 @@ use rand::Rng;
 
 use std::sync::Arc;
 
-pub struct Consensus<S: Storage> {
+pub struct Consensus {
     pub parameters: ConsensusParameters,
     pub public_parameters: PublicParameters<Components>,
-    pub ledger: Arc<MerkleTreeLedger<S>>,
+    pub ledger: Arc<MerkleTreeLedger>,
     pub memory_pool: MemoryPool<Tx>,
 }
 
-impl<S: Storage> Consensus<S> {
+impl Consensus {
     /// Check if the transaction is valid.
     pub fn verify_transaction(&self, transaction: &Tx) -> Result<bool, ConsensusError> {
         if !self
@@ -265,7 +265,7 @@ impl<S: Storage> Consensus<S> {
         rng: &mut R,
     ) -> Result<(Vec<DPCRecord<Components>>, Tx), ConsensusError> {
         // Offline execution to generate a DPC transaction
-        let transaction_kernel = <InstantiatedDPC as DPCScheme<MerkleTreeLedger<S>>>::execute_offline(
+        let transaction_kernel = <InstantiatedDPC as DPCScheme<MerkleTreeLedger>>::execute_offline(
             self.public_parameters.system_parameters.clone(),
             old_records,
             old_account_private_keys,
@@ -282,7 +282,7 @@ impl<S: Storage> Consensus<S> {
 
         // Construct the program proofs
         let (old_death_program_proofs, new_birth_program_proofs) =
-            ConsensusParameters::generate_program_proofs::<R, S>(&self.public_parameters, &transaction_kernel, rng)?;
+            ConsensusParameters::generate_program_proofs::<R>(&self.public_parameters, &transaction_kernel, rng)?;
 
         // Online execution to generate a DPC transaction
         let (new_records, transaction) = InstantiatedDPC::execute_online(

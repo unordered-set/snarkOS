@@ -23,7 +23,6 @@ use snarkvm_dpc::{
     BlockHeader,
     DPCScheme,
     RecordScheme,
-    Storage,
     TransactionScheme,
     Transactions as DPCTransactions,
 };
@@ -36,18 +35,18 @@ use std::sync::Arc;
 
 /// Compiles transactions into blocks to be submitted to the network.
 /// Uses a proof of work based algorithm to find valid blocks.
-pub struct Miner<S: Storage> {
+pub struct Miner {
     /// The coinbase address that mining rewards are assigned to.
     address: AccountAddress<Components>,
     /// The sync parameters for the network of this miner.
-    pub consensus: Arc<Consensus<S>>,
+    pub consensus: Arc<Consensus>,
     /// The mining instance that is initialized with a proving key.
     miner: PoswMarlin,
 }
 
-impl<S: Storage> Miner<S> {
+impl Miner {
     /// Creates a new instance of `Miner`.
-    pub fn new(address: AccountAddress<Components>, consensus: Arc<Consensus<S>>) -> Self {
+    pub fn new(address: AccountAddress<Components>, consensus: Arc<Consensus>) -> Self {
         Self {
             address,
             consensus,
@@ -62,7 +61,7 @@ impl<S: Storage> Miner<S> {
 
         self.consensus
             .memory_pool
-            .get_candidates(&self.consensus.ledger, max_block_size)
+            .get_candidates(max_block_size)
     }
 
     /// Add a coinbase transaction to a list of candidate block transactions
@@ -125,7 +124,6 @@ impl<S: Storage> Miner<S> {
         assert!(InstantiatedDPC::verify_transactions(
             &self.consensus.public_parameters,
             &transactions.0,
-            &*self.consensus.ledger,
         )?);
 
         let previous_block_header = self.consensus.ledger.get_latest_block()?.header;

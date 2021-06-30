@@ -22,11 +22,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::error::ConsensusError;
 use mpmc_map::MpmcMap;
-use snarkos_storage::Ledger;
 use snarkvm_algorithms::traits::LoadableMerkleParameters;
 use snarkvm_dpc::{BlockHeader, LedgerScheme, Storage, TransactionScheme, Transactions as DPCTransactions};
 use snarkvm_utilities::{
-    bytes::{FromBytes, ToBytes},
     has_duplicates,
     to_bytes,
 };
@@ -67,51 +65,9 @@ impl<T: TransactionScheme + Send + Sync + 'static> MemoryPool<T> {
         Self::default()
     }
 
-    /// Load the memory pool from previously stored state in storage
-    pub async fn from_storage<P: LoadableMerkleParameters, S: Storage>(
-        storage: &Ledger<T, P, S>,
-    ) -> Result<Self, ConsensusError> {
-        let memory_pool = Self::new();
-
-        if let Ok(Some(serialized_transactions)) = storage.get_memory_pool() {
-            if let Ok(transaction_bytes) = DPCTransactions::<T>::read(&serialized_transactions[..]) {
-                for transaction in transaction_bytes.0 {
-                    let size = transaction.size();
-                    let entry = Entry {
-                        transaction,
-                        size_in_bytes: size,
-                    };
-                    memory_pool.insert(storage, entry).await?;
-                }
-            }
-        }
-
-        Ok(memory_pool)
-    }
-
-    /// Store the memory pool state to the database
-    #[inline]
-    pub fn store<P: LoadableMerkleParameters, S: Storage>(
-        &self,
-        storage: &Ledger<T, P, S>,
-    ) -> Result<(), ConsensusError> {
-        let mut transactions = DPCTransactions::<T>::new();
-
-        for (_transaction_id, entry) in self.transactions.inner().iter() {
-            transactions.push(entry.transaction.clone())
-        }
-
-        let serialized_transactions = to_bytes![transactions]?.to_vec();
-
-        storage.store_to_memory_pool(serialized_transactions)?;
-
-        Ok(())
-    }
-
     /// Adds entry to memory pool if valid in the current ledger.
-    pub async fn insert<P: LoadableMerkleParameters, S: Storage>(
+    pub async fn insert<P: LoadableMerkleParameters>(
         &self,
-        storage: &Ledger<T, P, S>,
         entry: Entry<T>,
     ) -> Result<Option<Vec<u8>>, ConsensusError> {
         let transaction_serial_numbers = entry.transaction.old_serial_numbers();
@@ -136,21 +92,21 @@ impl<T: TransactionScheme + Send + Sync + 'static> MemoryPool<T> {
             holding_memos.push(tx.transaction.memorandum());
         }
 
-        for sn in transaction_serial_numbers {
-            if storage.contains_sn(sn) || holding_serial_numbers.contains(&sn) {
-                return Ok(None);
-            }
-        }
+        // for sn in transaction_serial_numbers {
+        //     if storage.contains_sn(sn) || holding_serial_numbers.contains(&sn) {
+        //         return Ok(None);
+        //     }
+        // }
 
-        for cm in transaction_commitments {
-            if storage.contains_cm(cm) || holding_commitments.contains(&cm) {
-                return Ok(None);
-            }
-        }
+        // for cm in transaction_commitments {
+        //     if storage.contains_cm(cm) || holding_commitments.contains(&cm) {
+        //         return Ok(None);
+        //     }
+        // }
 
-        if storage.contains_memo(transaction_memo) || holding_memos.contains(&transaction_memo) {
-            return Ok(None);
-        }
+        // if storage.contains_memo(transaction_memo) || holding_memos.contains(&transaction_memo) {
+        //     return Ok(None);
+        // }
 
         let transaction_id = entry.transaction.transaction_id()?.to_vec();
 
@@ -163,14 +119,13 @@ impl<T: TransactionScheme + Send + Sync + 'static> MemoryPool<T> {
 
     /// Cleanse the memory pool of outdated transactions.
     #[inline]
-    pub async fn cleanse<P: LoadableMerkleParameters, S: Storage>(
+    pub async fn cleanse<P: LoadableMerkleParameters>(
         &self,
-        storage: &Ledger<T, P, S>,
     ) -> Result<(), ConsensusError> {
         let new_memory_pool = Self::new();
 
         for (_, entry) in self.clone().transactions.inner().iter() {
-            new_memory_pool.insert(storage, entry.clone()).await?;
+            new_memory_pool.insert(entry.clone()).await?;
         }
 
         self.total_size_in_bytes.store(
@@ -225,9 +180,8 @@ impl<T: TransactionScheme + Send + Sync + 'static> MemoryPool<T> {
     }
 
     /// Get candidate transactions for a new block.
-    pub fn get_candidates<P: LoadableMerkleParameters, S: Storage>(
+    pub fn get_candidates<P: LoadableMerkleParameters>(
         &self,
-        storage: &Ledger<T, P, S>,
         max_size: usize,
     ) -> Result<DPCTransactions<T>, ConsensusError> {
         let max_size = max_size - (BLOCK_HEADER_SIZE + COINBASE_TRANSACTION_SIZE);
@@ -238,9 +192,9 @@ impl<T: TransactionScheme + Send + Sync + 'static> MemoryPool<T> {
         // TODO Change naive transaction selection
         for (_transaction_id, entry) in self.transactions.inner().iter() {
             if block_size + entry.size_in_bytes <= max_size {
-                if storage.transaction_conflicts(&entry.transaction) || transactions.conflicts(&entry.transaction) {
-                    continue;
-                }
+                // if storage.transaction_conflicts(&entry.transaction) || transactions.conflicts(&entry.transaction) {
+                //     continue;
+                // }
 
                 block_size += entry.size_in_bytes;
                 transactions.push(entry.transaction.clone());

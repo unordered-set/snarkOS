@@ -61,7 +61,7 @@ const METHODS_EXPECTING_PARAMS: [&str; 14] = [
 #[allow(clippy::too_many_arguments)]
 pub fn start_rpc_server<S: Storage + Send + Sync + 'static>(
     rpc_addr: SocketAddr,
-    secondary_storage: Arc<MerkleTreeLedger<S>>,
+    storage: Arc<MerkleTreeLedger<S>>,
     node_server: Node<S>,
     username: Option<String>,
     password: Option<String>,
@@ -71,7 +71,7 @@ pub fn start_rpc_server<S: Storage + Send + Sync + 'static>(
         _ => None,
     };
 
-    let rpc_impl = RpcImpl::new(secondary_storage, credentials, node_server);
+    let rpc_impl = RpcImpl::new(storage, credentials, node_server);
 
     let service = make_service_fn(move |_conn| {
         let rpc = rpc_impl.clone();

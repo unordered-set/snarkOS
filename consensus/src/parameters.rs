@@ -120,58 +120,58 @@ impl ConsensusParameters {
         Ok(())
     }
 
-    // TODO (raychu86): Genericize this model to allow for generic programs.
-    /// Generate the birth and death program proofs for a transaction for a given transaction kernel
-    #[allow(clippy::type_complexity)]
-    pub fn generate_program_proofs<R: Rng, S: Storage>(
-        parameters: &<InstantiatedDPC as DPCScheme<MerkleTreeLedger<S>>>::NetworkParameters,
-        transaction_kernel: &<InstantiatedDPC as DPCScheme<MerkleTreeLedger<S>>>::TransactionKernel,
-        rng: &mut R,
-    ) -> Result<
-        (
-            Vec<<InstantiatedDPC as DPCScheme<MerkleTreeLedger<S>>>::PrivateProgramInput>,
-            Vec<<InstantiatedDPC as DPCScheme<MerkleTreeLedger<S>>>::PrivateProgramInput>,
-        ),
-        ConsensusError,
-    > {
-        let local_data = transaction_kernel.into_local_data();
+    // // TODO (raychu86): Genericize this model to allow for generic programs.
+    // /// Generate the birth and death program proofs for a transaction for a given transaction kernel
+    // #[allow(clippy::type_complexity)]
+    // pub fn generate_program_proofs<R: Rng>(
+    //     parameters: &<InstantiatedDPC as DPCScheme<MerkleTreeLedger>>::NetworkParameters,
+    //     transaction_kernel: &<InstantiatedDPC as DPCScheme<MerkleTreeLedger>>::TransactionKernel,
+    //     rng: &mut R,
+    // ) -> Result<
+    //     (
+    //         Vec<<InstantiatedDPC as DPCScheme<MerkleTreeLedger>>::PrivateProgramInput>,
+    //         Vec<<InstantiatedDPC as DPCScheme<MerkleTreeLedger>>::PrivateProgramInput>,
+    //     ),
+    //     ConsensusError,
+    // > {
+    //     let local_data = transaction_kernel.into_local_data();
 
-        let noop_program_snark_id = to_bytes![ProgramVerificationKeyCRH::hash(
-            &parameters.system_parameters.program_verification_key_crh,
-            &to_bytes![parameters.noop_program_snark_parameters.verification_key]?
-        )?]?;
+    //     let noop_program_snark_id = to_bytes![ProgramVerificationKeyCRH::hash(
+    //         &parameters.system_parameters.program_verification_key_crh,
+    //         &to_bytes![parameters.noop_program_snark_parameters.verification_key]?
+    //     )?]?;
 
-        let dpc_program =
-            NoopProgram::<_, <Components as BaseDPCComponents>::NoopProgramSNARK>::new(noop_program_snark_id);
+    //     let dpc_program =
+    //         NoopProgram::<_, <Components as BaseDPCComponents>::NoopProgramSNARK>::new(noop_program_snark_id);
 
-        let mut old_death_program_proofs = Vec::with_capacity(NUM_INPUT_RECORDS);
-        for i in 0..NUM_INPUT_RECORDS {
-            let private_input = dpc_program.execute(
-                &parameters.noop_program_snark_parameters.proving_key,
-                &parameters.noop_program_snark_parameters.verification_key,
-                &local_data,
-                i as u8,
-                rng,
-            )?;
+    //     let mut old_death_program_proofs = Vec::with_capacity(NUM_INPUT_RECORDS);
+    //     for i in 0..NUM_INPUT_RECORDS {
+    //         let private_input = dpc_program.execute(
+    //             &parameters.noop_program_snark_parameters.proving_key,
+    //             &parameters.noop_program_snark_parameters.verification_key,
+    //             &local_data,
+    //             i as u8,
+    //             rng,
+    //         )?;
 
-            old_death_program_proofs.push(private_input);
-        }
+    //         old_death_program_proofs.push(private_input);
+    //     }
 
-        let mut new_birth_program_proofs = Vec::with_capacity(NUM_OUTPUT_RECORDS);
-        for j in 0..NUM_OUTPUT_RECORDS {
-            let private_input = dpc_program.execute(
-                &parameters.noop_program_snark_parameters.proving_key,
-                &parameters.noop_program_snark_parameters.verification_key,
-                &local_data,
-                (NUM_INPUT_RECORDS + j) as u8,
-                rng,
-            )?;
+    //     let mut new_birth_program_proofs = Vec::with_capacity(NUM_OUTPUT_RECORDS);
+    //     for j in 0..NUM_OUTPUT_RECORDS {
+    //         let private_input = dpc_program.execute(
+    //             &parameters.noop_program_snark_parameters.proving_key,
+    //             &parameters.noop_program_snark_parameters.verification_key,
+    //             &local_data,
+    //             (NUM_INPUT_RECORDS + j) as u8,
+    //             rng,
+    //         )?;
 
-            new_birth_program_proofs.push(private_input);
-        }
+    //         new_birth_program_proofs.push(private_input);
+    //     }
 
-        Ok((old_death_program_proofs, new_birth_program_proofs))
-    }
+    //     Ok((old_death_program_proofs, new_birth_program_proofs))
+    // }
 }
 
 #[cfg(test)]
